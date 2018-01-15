@@ -6,6 +6,20 @@ let DISABLE_PREFIX = false;
 
 let NOT_BROWSER = false; // FIXME - set depending on if this is a Android (or iOS?) or a browser, etc.
 
+// Note: only reliable way to detect when running in live reload develoment on android is check the UA
+// Because live reload is not serving from the device...
+// ex. Samsung: Mozilla/5.0 (Linux; Android 6.0.1; SM-T350 Build/MMB29M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/62.0.3202.84 Safari/537.36
+// We can also try ((<any>window)['IonicDevServer'] != undefined) but that will disable colour in the web browser
+let TRY_ANDROID = false;
+let STYLE;
+declare var require: any;
+if (document.URL.startsWith('file') || /wv/.test(window.navigator.userAgent)) {
+  NOT_BROWSER = true;
+  TRY_ANDROID = true; // Enable colour output in logcat
+  STYLE = require('ansi-styles');
+}
+
+
 // uncomment to test; TODO pull from build environment
 // Note, changing these seems to require a full build, live-reload seems to miss it?
 // Prefix we normally want to leave enabled
@@ -114,6 +128,15 @@ function BoundSimpleConsoleLogWrap(log): Function {
 function BoundPrefixConsoleLogWrap(log, prefix): Function {
   return function(...args): Function {
     const mod = FormatReplacer(args[0], ...args);
+    if (TRY_ANDROID) {
+      if (log == 'error') {
+        return console[log].bind(console, prefix + STYLE.color.red.open + util.format(...mod) + STYLE.color.close);
+      }
+      if (log == 'warn') {
+        return console[log].bind(console, prefix + STYLE.color.yellow.open + util.format(...mod) + STYLE.color.close);
+      }
+      return console[log].bind(console, prefix + STYLE.color.blueBright.open + util.format(...mod) + STYLE.color.close);
+    }
     return console[log].bind(console, prefix + util.format(...mod));
   }
 }
@@ -218,7 +241,12 @@ export class Logging implements ILogging {
       }
     } else {
       if (NOT_BROWSER) {
-        return BoundPrefixConsoleLogWrap(log, '[' + namespace + '] ');
+        if (TRY_ANDROID) {
+          const colour = selectColor(namespace);
+          return BoundPrefixConsoleLogWrap(log, STYLE.color.ansi16m.hex(colour) + '[' + namespace + '] ' + STYLE.color.close);
+        } else {
+          return BoundPrefixConsoleLogWrap(log, '[' + namespace + '] ');
+        }
       } else {
         if (haveColour) {
           const colour = selectColor(namespace);
@@ -242,6 +270,8 @@ const f = Logging.get('Test');
 // assert(f.Info is not not-a-function)
 
 f.Debug('Simple String')();
+f.Error('Error')();
+f.Warn('Warn')();
 f.Debug(0)();
 f.Debug([])();
 f.Debug(false)();
