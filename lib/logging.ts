@@ -138,35 +138,78 @@ const haveColour = haveColours() ? true : false;
 
 const LEVELS = { 'TRACE': 0, 'DEBUG': 1, 'INFO': 2, 'WARN': 3, 'ERROR': 4, 'SILENT': 5};
 
-let currentLevel = 1;
+let systemWideCurrentLevel = 1;
 
-console.log('[Platfarm Debug Module]');
-console.log('[Platfarm Debug Module] haveColour=' + haveColours()); // use function to print out what the browser thinks it is
-console.log('[Platfarm Debug Module] currentLevel=' + currentLevel); // use function to print out what the browser thinks it is
-if (currentLevel > LEVELS.ERROR) {
-  console.error('WARNING - App Error Debugging is suppressed!');
+console.log('[Platfarm Debug Logging]');
+console.log('[Platfarm Debug Logging] haveColour=' + haveColours()); // use function to print out what the browser thinks it is
+console.log('[Platfarm Debug Logging] currentLevel=' + systemWideCurrentLevel); // use function to print out what the browser thinks it is
+if (systemWideCurrentLevel > LEVELS.ERROR) {
+  console.error('[Platfarm Debug Logging] WARNING - App Error Debugging is suppressed!');
 }
 
-// Affects entire app at present, and only for future imports.
+const AllLoggers = {};
+
+// Affects entire app at present, and only for future constructions.
 // Therefore should be called from main.ts and somehow using a flag from the build environment.
 export function setLevel(level) {
   if (typeof level === "string" && LEVELS[level.toUpperCase()] !== undefined) {
     level = LEVELS[level.toUpperCase()];
   }
   if (typeof level === "number" && level >= 0 && level <= LEVELS.SILENT) {
-    currentLevel = level;
+    if (systemWideCurrentLevel !== level) {
+      console.log('[Platfarm Debug Logging] change: currentLevel=' + systemWideCurrentLevel);
+      systemWideCurrentLevel = level;
+      Object.getOwnPropertyNames(AllLoggers).forEach(v => AllLoggers[v].refreshLevels());
+    }
   }
 }
 
+export interface ILogging {
+  Trace: Function;
+  Debug: Function;
+  Info: Function;
+  Warn: Function;
+  Error: Function;
+}
 
-// TODO: Consider using a class instance per thing, so we can bind the functions to it... and also control by namespace what gets filtered
-export class Logging {
+export class Logging implements ILogging {
+  private namespace_;
+  public Trace: Function;
+  public Debug: Function;
+  public Info: Function;
+  public Warn: Function;
+  public Error: Function;
 
-  static EnrolDebug(log: string, namespace?: string): Function {
-    console.log('[Logging] Enroll: ' + namespace + ',' + log);
+  static get(namespace: string): ILogging {
+    if (Object.getOwnPropertyNames(AllLoggers).includes(namespace)) {
+      return AllLoggers[namespace];
+    }
+    const newLogger = new Logging(namespace);
+    AllLoggers[namespace] = newLogger;
+    return newLogger;
+  }
 
+  constructor(namespace: string) {
+    console.log('[Platfarm Debug Logging] Enrol: ' + namespace);
+    this.namespace_ = namespace;
+    this['Trace'] = this.enrol('trace', namespace);
+    this['Debug'] = this.enrol('log', namespace);
+    this['Info'] = this.enrol('info', namespace);
+    this['Warn'] = this.enrol('warn', namespace);
+    this['Error'] = this.enrol('error', namespace);
+  }
+
+  refreshLevels() {
+    this['Trace'] = this.enrol('trace', this.namespace_);
+    this['Debug'] = this.enrol('log', this.namespace_);
+    this['Info'] = this.enrol('info', this.namespace_);
+    this['Warn'] = this.enrol('warn', this.namespace_);
+    this['Error'] = this.enrol('error', this.namespace_);
+  }
+
+  private enrol(log: string, namespace?: string): Function {
+    if (systemWideCurrentLevel > LEVELS.DEBUG) return NOOP;
     if (!(console[log] !== undefined)) log = 'log';
-
     if (DISABLE_PREFIX) {
       if (NOT_BROWSER) {
         return BoundSimpleConsoleLogWrap(log);
@@ -189,39 +232,33 @@ export class Logging {
       }
     }
   }
-
-  static Debug(namespace?: string): any {
-    if (currentLevel > LEVELS.DEBUG) return NOOP;
-    return this.EnrolDebug('log', namespace);;
-  }
-
-  static Error(namespace?: string): any {
-    if (currentLevel > LEVELS.ERROR) return NOOP;
-    return this.EnrolDebug('error', namespace);;
-  }
-
-  static Warn(namespace?: string): any {
-    if (currentLevel > LEVELS.WARN) return NOOP;
-    return this.EnrolDebug('warn', namespace);;
-  }
-
-  static Info(namespace?: string): any {
-    if (currentLevel > LEVELS.INFO) return NOOP;
-    return this.EnrolDebug('info', namespace);;
-  }
 }
 
-// const f = Logging.Debug('Test');
-// assert(f is not not-a-function)
+
+const f = Logging.get('Test');
+// assert(f.Debug is not not-a-function)
+// assert(f.Error is not not-a-function)
+// assert(f.Warn is not not-a-function)
+// assert(f.Info is not not-a-function)
+
+f.Debug('Simple String')();
+f.Debug(0)();
+f.Debug([])();
+f.Debug(false)();
+f.Debug(null)();
+f.Debug(undefined)();
+f.Debug()();
+f.Debug('Arg String with j -- %j .', {x:123})();
+f.Debug('Arg String with O -- %O .', {y:123})();
+f.Debug('Arg String with obj ...', {y:123})();
+
 /*
-f('Simple String')();
-f(0)();
-f([])();
-f(false)();
-f(null)();
-f(undefined)();
-f()();
-f('Arg String with j -- %j .', {x:123})();
-f('Arg String with O -- %O .', {y:123})();
-f('Arg String with obj ...', {y:123})();
+debug(\(.*?\));
+DEBUG$1()
+
+console.log(\(.*?\))
+DEBUG$1()
+
+console.error(\(.*?\))
+ERROR$1()
 */
