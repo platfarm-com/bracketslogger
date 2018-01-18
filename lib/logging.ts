@@ -2,8 +2,10 @@ import * as util from 'util';
 
 function NOOP() {}
 
+// tslint:disable-next-line
 let DISABLE_PREFIX = false;
 
+// tslint:disable-next-line
 let NOT_BROWSER = false; // FIXME - set depending on if this is a Android (or iOS?) or a browser, etc.
 
 // Note: only reliable way to detect when running in live reload develoment on android is check the UA
@@ -41,11 +43,12 @@ const COLOURS = [
 ];
 
 // Inspired by npm package 'debug' - see example_/debug (MIT License, browser.js)
-function selectColor(namespace) {
-  var hash = 0, i;
-
-  for (i in namespace) {
+function selectColor(namespace: string) {
+  let hash = 0;
+  for (let i = 0; i < namespace.length; i++) {
+    // tslint:disable-next-line no-bitwise
     hash  = ((hash << 5) - hash) + namespace.charCodeAt(i);
+    // tslint:disable-next-line no-bitwise
     hash |= 0; // Convert to 32bit integer
   }
 
@@ -98,15 +101,15 @@ function FormatReplacer(expr, ...args) {
 // Inspired by npm package 'debug' - see example_/debug (MIT License, browser.js)
 // Return a modified array that can be bound to console.log, etc
 function BrowserReplacer(expr, ...args) {
-  var index = 0;
+  let index = 0;
   if (args.length < 1) { return args; }
   if (typeof expr !== 'string') return [...args];
   expr = expr.replace(/%([a-zA-Z%])/g, function(match, format) {
     // if we encounter an escaped % then don't increase the array index
     if (match === '%%') return match;
     index++;
-    if (format==='j') {
-      var val = args[index];
+    if (format === 'j') {
+      const val = args[index];
       match = JSON.stringify(val);
       // now we need to remove `args[index]` since it's inlined in the `format`
       args.splice(index, 1);
@@ -129,10 +132,10 @@ function BoundPrefixConsoleLogWrap(log, prefix): Function {
   return function(...args): Function {
     const mod = FormatReplacer(args[0], ...args);
     if (TRY_ANDROID) {
-      if (log == 'error') {
+      if (log === 'error') {
         return console[log].bind(console, prefix + STYLE.color.red.open + util.format(...mod) + STYLE.color.close);
       }
-      if (log == 'warn') {
+      if (log === 'warn') {
         return console[log].bind(console, prefix + STYLE.color.yellow.open + util.format(...mod) + STYLE.color.close);
       }
       return console[log].bind(console, prefix + STYLE.color.blueBright.open + util.format(...mod) + STYLE.color.close);
@@ -150,11 +153,11 @@ function BoundSimpleBrowserLogWrap(log): Function {
 function BoundPrefixBrowserLogWrap(log, prefixArgs: Array<any>): Function {
   const prefix = prefixArgs[0];
   const colourArgs = prefixArgs.splice(1);
-  const f = function(...args): Function {
+  const wrapped = function(...args): Function {
     const mod = BrowserReplacer(args[0], ...args);
     return console[log].bind(console, prefix + mod[0], ...colourArgs, ...mod.splice(1));
   }
-  return f;
+  return wrapped;
 }
 
 const haveColour = haveColours() ? true : false;
@@ -175,10 +178,10 @@ const AllLoggers = {};
 // Affects entire app at present, and only for future constructions.
 // Therefore should be called from main.ts and somehow using a flag from the build environment.
 export function setLevel(level) {
-  if (typeof level === "string" && LEVELS[level.toUpperCase()] !== undefined) {
+  if (typeof level === 'string' && LEVELS[level.toUpperCase()] !== undefined) {
     level = LEVELS[level.toUpperCase()];
   }
-  if (typeof level === "number" && level >= 0 && level <= LEVELS.SILENT) {
+  if (typeof level === 'number' && level >= 0 && level <= LEVELS.SILENT) {
     if (systemWideCurrentLevel !== level) {
       console.log('[Platfarm Debug Logging] change: currentLevel=' + systemWideCurrentLevel);
       systemWideCurrentLevel = level;
@@ -278,9 +281,9 @@ f.Debug(false)();
 f.Debug(null)();
 f.Debug(undefined)();
 f.Debug()();
-f.Debug('Arg String with j -- %j .', {x:123})();
-f.Debug('Arg String with O -- %O .', {y:123})();
-f.Debug('Arg String with obj ...', {y:123})();
+f.Debug('Arg String with j -- %j .', {x: 123})();
+f.Debug('Arg String with O -- %O .', {y: 123})();
+f.Debug('Arg String with obj ...', {y: 123})();
 
 /*
 debug(\(.*?\));
