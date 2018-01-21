@@ -295,3 +295,8 @@ DEBUG$1()
 console.error(\(.*?\))
 ERROR$1()
 */
+
+
+// TOOD: Log.NoPrefix.Debug(blah) same as console.log
+// TODO: Debug('x', y) -- if android, then make sure y gets printed. (or flag with tslint...)
+// TODO: linter wont detect (e) => Log.Error(e)() mising second ()
