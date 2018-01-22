@@ -265,6 +265,7 @@ export class Logging implements ILogging {
   }
 }
 
+/* Uncomment to test, including the custom lint rule
 
 const f = Logging.get('Test');
 // assert(f.Debug is not not-a-function)
@@ -284,6 +285,18 @@ f.Debug()();
 f.Debug('Arg String with j -- %j .', {x: 123})();
 f.Debug('Arg String with O -- %O .', {y: 123})();
 f.Debug('Arg String with obj ...', {y: 123})();
+f.Debug('What trailing semicolon?', {z: 789})()
+
+setTimeout(() => f.Debug('Timeout1.')(), 100);
+setTimeout(() => f.Debug('Timeout1 Bad.'), 500);
+setTimeout(() => f.Debug('Timeout2.')(), 900)
+setTimeout(() => f.Debug('Timeout2 Bad.'), 1300)
+
+function p(a, b) {}
+
+p(() => {}, () => f.Debug('Nexted3 Bad.'));
+p(() => {}, () => { p(null, null); f.Debug('Nexted4 Bad.'); });
+*/
 
 /*
 debug(\(.*?\));
