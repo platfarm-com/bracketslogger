@@ -167,7 +167,7 @@ const LEVELS = { 'TRACE': 0, 'DEBUG': 1, 'INFO': 2, 'WARN': 3, 'ERROR': 4, 'SILE
 let systemWideCurrentLevel = 1;
 
 console.log('[Platfarm Debug Logging]');
-console.log('[Platfarm Debug Logging] haveColour=' + haveColours()); // use function to print out what the browser thinks it is
+console.log('[Platfarm Debug Logging] haveColour=' + haveColour); // use function to print out what the browser thinks it is
 console.log('[Platfarm Debug Logging] currentLevel=' + systemWideCurrentLevel); // use function to print out what the browser thinks it is
 if (systemWideCurrentLevel > LEVELS.ERROR) {
   console.error('[Platfarm Debug Logging] WARNING - App Error Debugging is suppressed!');
