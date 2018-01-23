@@ -151,11 +151,18 @@ function BoundSimpleBrowserLogWrap(log): Function {
 }
 
 function BoundPrefixBrowserLogWrap(log, prefixArgs: Array<any>): Function {
-  const prefix = prefixArgs[0];
-  const colourArgs = prefixArgs.splice(1);
+  // These first vars need to be outside of wrapped {...}. Remember to take a deep copy too...
+  const prefix = prefixArgs[0]; // possible value - ['%c[thing]%c', 'color:blah', 'color:inherit']
+  const colourArgs = [...prefixArgs].splice(1);
   const wrapped = function(...args): Function {
     const mod = BrowserReplacer(args[0], ...args);
-    return console[log].bind(console, prefix + mod[0], ...colourArgs, ...mod.splice(1));
+    if (mod[0] && typeof mod[0] !== 'string' && typeof mod[0] !== 'number') {
+      // When first input arg is not a string, then follow the colour flags first
+      // BUt let number, null, undefined also render as a string, otherwise they come through as blank
+      return console[log].bind(console, ...prefixArgs, ...mod);
+    } else {
+      return console[log].bind(console, prefix + ' ' + mod[0], ...colourArgs, ...mod.splice(1));
+    }
   }
   return wrapped;
 }
@@ -243,6 +250,7 @@ export class Logging implements ILogging {
         return BoundSimpleBrowserLogWrap(log);
       }
     } else {
+      namespace = namespace.replace(/%/g, '%%'); // prohibit expansion inside the log title]
       if (NOT_BROWSER) {
         if (TRY_ANDROID) {
           const colour = selectColor(namespace);
@@ -255,10 +263,10 @@ export class Logging implements ILogging {
           const colour = selectColor(namespace);
           const C1 = 'color: ' + colour;
           const C2 = 'color: inherit';
-          const prefixArgs = ['%c[' + namespace + ']%c ', C1, C2];
+          const prefixArgs = ['%c[' + namespace + ']%c', C1, C2];
           return BoundPrefixBrowserLogWrap(log, prefixArgs);
         } else {
-          return BoundPrefixBrowserLogWrap(log, ['[' + namespace + '] ']);
+          return BoundPrefixBrowserLogWrap(log, ['[' + namespace + ']']);
         }
       }
     }
@@ -277,15 +285,20 @@ f.Debug('Simple String')();
 f.Error('Error')();
 f.Warn('Warn')();
 f.Debug(0)();
+f.Debug(1)();
 f.Debug([])();
 f.Debug(false)();
 f.Debug(null)();
+f.Debug(null, 'more-null')();
 f.Debug(undefined)();
 f.Debug()();
 f.Debug('Arg String with j -- %j .', {x: 123})();
 f.Debug('Arg String with O -- %O .', {y: 123})();
 f.Debug('Arg String with obj ...', {y: 123})();
 f.Debug('What trailing semicolon?', {z: 789})()
+
+f.Debug({hello: 'world-object-first'})();
+f.Debug({hello: 'w1'}, {world: 'w1'})();
 
 setTimeout(() => f.Debug('Timeout1.')(), 100);
 setTimeout(() => f.Debug('Timeout1 Bad.'), 500);
