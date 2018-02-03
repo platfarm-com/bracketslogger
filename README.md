@@ -21,6 +21,8 @@ There is also a very small performance hit because a new anonymous function is c
 This wont help if you are using it from pure javascript however.
 See http://github.com/pastcompute/bracketslogger-tslint-rule.git
 
+This library is being used in a real (proprietary) Android app under development.
+
 # Usage
 
 Typescript example:
@@ -65,3 +67,6 @@ css to colour the results made it easy to pick various component logs out.
 - debug - https://www.npmjs.com/package/debug
 - log-level - https://github.com/pimterry/loglevel
 
+# Licensing
+
+I've set this to LGPL-2.1 for the moment, until I work out whats best.
