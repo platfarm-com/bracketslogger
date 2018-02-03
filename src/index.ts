@@ -15,12 +15,11 @@ let NOT_BROWSER = false; // FIXME - set depending on if this is a Android (or iO
 let TRY_ANDROID = false;
 let STYLE;
 declare var require: any;
-if (document.URL.startsWith('file') || /wv/.test(window.navigator.userAgent)) {
+if ((document && document.URL && document.URL.startsWith('file')) || /wv/.test(window && window.navigator && window.navigator.userAgent)) {
   NOT_BROWSER = true;
   TRY_ANDROID = true; // Enable colour output in logcat
   STYLE = require('ansi-styles');
 }
-
 
 // uncomment to test; TODO pull from build environment
 // Note, changing these seems to require a full build, live-reload seems to miss it?
@@ -177,11 +176,11 @@ const LEVELS = { 'TRACE': 0, 'DEBUG': 1, 'INFO': 2, 'WARN': 3, 'ERROR': 4, 'SILE
 
 let systemWideCurrentLevel = 1;
 
-console.log('[Platfarm Debug Logging]');
-console.log('[Platfarm Debug Logging] haveColour=' + haveColour); // use function to print out what the browser thinks it is
-console.log('[Platfarm Debug Logging] currentLevel=' + systemWideCurrentLevel); // use function to print out what the browser thinks it is
+console.log('[BracketsLogger Debug Logging]');
+console.log('[BracketsLogger Debug Logging] haveColour=' + haveColour); // use function to print out what the browser thinks it is
+console.log('[BracketsLogger Debug Logging] currentLevel=' + systemWideCurrentLevel); // use function to print out what the browser thinks it is
 if (systemWideCurrentLevel > LEVELS.ERROR) {
-  console.error('[Platfarm Debug Logging] WARNING - App Error Debugging is suppressed!');
+  console.error('[BracketsLogger Debug Logging] WARNING - App Error Debugging is suppressed!');
 }
 
 const AllLoggers = {};
@@ -194,7 +193,7 @@ export function setLevel(level) {
   }
   if (typeof level === 'number' && level >= 0 && level <= LEVELS.SILENT) {
     if (systemWideCurrentLevel !== level) {
-      console.log('[Platfarm Debug Logging] change: currentLevel=' + systemWideCurrentLevel);
+      console.log('[BracketsLogger Debug Logging] change: currentLevel=' + systemWideCurrentLevel);
       systemWideCurrentLevel = level;
       Object.getOwnPropertyNames(AllLoggers).forEach(v => AllLoggers[v].refreshLevels());
     }
@@ -227,7 +226,7 @@ export class Logging implements ILogging {
   }
 
   constructor(namespace: string) {
-    console.log('[Platfarm Debug Logging] Enrol: ' + namespace);
+    console.log('[BracketsLogger] Enrol: ' + namespace);
     this.namespace_ = namespace;
     this['Trace'] = this.enrol('trace', namespace);
     this['Debug'] = this.enrol('log', namespace);

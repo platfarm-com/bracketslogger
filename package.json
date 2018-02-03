@@ -1,0 +1,35 @@
+{
+  "name": "bracketslogger",
+  "version": "0.0.1",
+  "keywords": [
+    "console",
+    "log",
+    "map",
+    "typescript"
+  ],
+  "description": "Colourful line accurate browser and node console logger that accepts a little inelegance for accuracy",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/pastcompute/bracketslogger.git"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "homepage": "https://github.com/pastcompute/bracketslogger",
+  "author": {
+    "name": "Andrew McDonnell",
+    "email": "bugs@andrewmcdonnell.net"
+  },
+  "license": "LGPL-2.1",
+  "devDependencies": {
+    "@types/node": "^9.4.0",
+    "browserify": "^14.4.0",
+    "tslint": "^5.9.1",
+    "typescript": "~2.6.2",
+    "typings": "^2.1.1"
+  }
+}
