@@ -129,16 +129,20 @@ function BoundSimpleConsoleLogWrap(log): Function {
 }
 
 function BoundPrefixConsoleLogWrap(log, prefix): Function {
+  const trimLen = 4008 - prefix.length - 20; // > STYLE.color.something.open + close
   return function(...args): Function {
     const mod = FormatReplacer(args[0], ...args);
     if (TRY_ANDROID) {
+      // adb seems to have a width limit which will chop the colour close, approx 4000 characters
+      // lets pull it back a bit anyway
+      const formatted = util.format(...mod).slice(0,trimLen);
       if (log === 'error') {
-        return console[log].bind(console, prefix + STYLE.color.red.open + util.format(...mod) + STYLE.color.close);
+        return console[log].bind(console, prefix + STYLE.color.red.open + formatted + STYLE.color.close);
       }
       if (log === 'warn') {
-        return console[log].bind(console, prefix + STYLE.color.yellow.open + util.format(...mod) + STYLE.color.close);
+        return console[log].bind(console, prefix + STYLE.color.yellow.open + formatted + STYLE.color.close);
       }
-      return console[log].bind(console, prefix + STYLE.color.blueBright.open + util.format(...mod) + STYLE.color.close);
+      return console[log].bind(console, prefix + STYLE.color.blueBright.open + formatted + STYLE.color.close);
     }
     return console[log].bind(console, prefix + util.format(...mod));
   }
