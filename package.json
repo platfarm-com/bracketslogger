@@ -1,6 +1,6 @@
 {
   "name": "bracketslogger",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "keywords": [
     "console",
     "log",
@@ -17,7 +17,9 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "bundle": "browserify --standalone bracketslogger -o dist/index.js out/bracketslogger.js -t [ babelify --global --presets [ env ] --plugins [ array-includes ] ]",
+    "prepare": "npm run build && npm run bundle"
   },
   "homepage": "https://github.com/pastcompute/bracketslogger",
   "author": {
@@ -25,14 +27,19 @@
     "email": "bugs@andrewmcdonnell.net"
   },
   "license": "LGPL-2.1",
+  "dependencies": {
+    "ansi-styles": "^3.2.0"
+  },
   "devDependencies": {
     "@types/node": "^9.4.0",
+    "babel-core": "~6.26.0",
+    "babel-plugin-array-includes": "~2.0.3",
+    "babel-plugin-transform-object-assign": "~6.22.0",
+    "babel-preset-env": "~1.6.1",
+    "babelify": "~7.3.0",
     "browserify": "^14.4.0",
     "tslint": "^5.9.1",
     "typescript": "~2.6.2",
     "typings": "^2.1.1"
-  },
-  "peerDependencies": {
-    "ansi-styles": "^3.2.0"
   }
 }
