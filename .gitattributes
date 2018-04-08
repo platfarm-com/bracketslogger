@@ -1,0 +1,11 @@
+* text=auto
+*.ts text
+*.js text
+*.scss text
+*.css text
+*.html text
+*.md text
+*.txt text
+*.json eol=lf
+package.json text eol=lf
+package-lock.json text eol=lf
