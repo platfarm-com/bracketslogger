@@ -2212,6 +2212,7 @@ function NOOP() {}
 var DISABLE_PREFIX = false;
 // tslint:disable-next-line
 var NOT_BROWSER = false; // FIXME - set depending on if this is a Android (or iOS?) or a browser, etc.
+var INSIDE_KARMA = false;
 // Note: only reliable way to detect when running in live reload develoment on android is check the UA
 // Because live reload is not serving from the device...
 // ex. Samsung: Mozilla/5.0 (Linux; Android 6.0.1; SM-T350 Build/MMB29M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/62.0.3202.84 Safari/537.36
@@ -2222,6 +2223,9 @@ if (document && document.URL && document.URL.startsWith('file') || /wv/.test(win
     NOT_BROWSER = true;
     TRY_ANDROID = true; // Enable colour output in logcat
     STYLE = require('ansi-styles');
+}
+if (typeof window.__karma__ !== 'undefined') {
+    INSIDE_KARMA = true;
 }
 // uncomment to test; TODO pull from build environment
 // Note, changing these seems to require a full build, live-reload seems to miss it?
@@ -2346,6 +2350,15 @@ function BoundPrefixConsoleLogWrap(log, prefix) {
         return console[log].bind(console, prefix + util.format.apply(util, mod));
     };
 }
+function SimpleBrowserNoop(log) {
+    return function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        return NOOP;
+    };
+}
 function BoundSimpleBrowserLogWrap(log) {
     return function () {
         var args = [];
@@ -2380,22 +2393,24 @@ function BoundPrefixBrowserLogWrap(log, prefixArgs) {
 var haveColour = haveColours() ? true : false;
 var LEVELS = { 'TRACE': 0, 'DEBUG': 1, 'INFO': 2, 'WARN': 3, 'ERROR': 4, 'SILENT': 5 };
 var systemWideCurrentLevel = 1;
-console.log('[BracketsLogger Debug Logging]');
-console.log('[BracketsLogger Debug Logging] haveColour=' + haveColour); // use function to print out what the browser thinks it is
-console.log('[BracketsLogger Debug Logging] currentLevel=' + systemWideCurrentLevel); // use function to print out what the browser thinks it is
+if (!INSIDE_KARMA) {
+    console.log('[BracketsLogger Debug Logging]');
+    console.log('[BracketsLogger Debug Logging] haveColour=' + haveColour); // use function to print out what the browser thinks it is
+    console.log('[BracketsLogger Debug Logging] currentLevel=' + systemWideCurrentLevel); // use function to print out what the browser thinks it is
+}
 if (systemWideCurrentLevel > LEVELS.ERROR) {
     console.error('[BracketsLogger Debug Logging] WARNING - App Error Debugging is suppressed!');
 }
 var AllLoggers = {};
 // Affects entire app at present, and only for future constructions.
 // Therefore should be called from main.ts and somehow using a flag from the build environment.
-function setLevel(level) {
+function setLevel(level, quiet) {
     if (typeof level === 'string' && LEVELS[level.toUpperCase()] !== undefined) {
         level = LEVELS[level.toUpperCase()];
     }
     if (typeof level === 'number' && level >= 0 && level <= LEVELS.SILENT) {
         if (systemWideCurrentLevel !== level) {
-            console.log('[BracketsLogger Debug Logging] change: currentLevel=' + systemWideCurrentLevel);
+            if (quiet !== true) console.log('[BracketsLogger Debug Logging] change: currentLevel=' + systemWideCurrentLevel + ' newLevel=' + level);
             systemWideCurrentLevel = level;
             Object.getOwnPropertyNames(AllLoggers).forEach(function (v) {
                 return AllLoggers[v].refreshLevels();
@@ -2406,13 +2421,15 @@ function setLevel(level) {
 exports.setLevel = setLevel;
 var Logging = /** @class */function () {
     function Logging(namespace) {
-        console.log('[BracketsLogger] Enrol: ' + namespace);
+        if (!INSIDE_KARMA) {
+            console.log('[BracketsLogger] Enrol: ' + namespace);
+        }
         this.namespace_ = namespace;
-        this['Trace'] = this.enrol('trace', namespace);
-        this['Debug'] = this.enrol('log', namespace);
-        this['Info'] = this.enrol('info', namespace);
-        this['Warn'] = this.enrol('warn', namespace);
-        this['Error'] = this.enrol('error', namespace);
+        this['Trace'] = this.enrol('trace', namespace, 0);
+        this['Debug'] = this.enrol('log', namespace, 1);
+        this['Info'] = this.enrol('info', namespace, 2);
+        this['Warn'] = this.enrol('warn', namespace, 3);
+        this['Error'] = this.enrol('error', namespace, 4);
     }
     Logging.get = function (namespace) {
         if (Object.getOwnPropertyNames(AllLoggers).indexOf(namespace) !== -1) {
@@ -2423,15 +2440,17 @@ var Logging = /** @class */function () {
         return newLogger;
     };
     Logging.prototype.refreshLevels = function () {
-        this['Trace'] = this.enrol('trace', this.namespace_);
-        this['Debug'] = this.enrol('log', this.namespace_);
-        this['Info'] = this.enrol('info', this.namespace_);
-        this['Warn'] = this.enrol('warn', this.namespace_);
-        this['Error'] = this.enrol('error', this.namespace_);
+        // console.log('[BracketsLogger] refreshLevels: ' + this.namespace_);
+        this['Trace'] = this.enrol('trace', this.namespace_, 0);
+        this['Debug'] = this.enrol('log', this.namespace_, 1);
+        this['Info'] = this.enrol('info', this.namespace_, 2);
+        this['Warn'] = this.enrol('warn', this.namespace_, 3);
+        this['Error'] = this.enrol('error', this.namespace_, 4);
     };
-    Logging.prototype.enrol = function (log, namespace) {
-        if (systemWideCurrentLevel > LEVELS.DEBUG) return NOOP;
+    Logging.prototype.enrol = function (log, namespace, level) {
+        if (systemWideCurrentLevel > level) return SimpleBrowserNoop(log);
         if (!(console[log] !== undefined)) log = 'log';
+        if (INSIDE_KARMA && log === 'info') log = 'log'; // INFO not supported by karma reporter
         if (DISABLE_PREFIX) {
             if (NOT_BROWSER) {
                 return BoundSimpleConsoleLogWrap(log);
@@ -2440,7 +2459,9 @@ var Logging = /** @class */function () {
             }
         } else {
             namespace = namespace.replace(/%/g, '%%'); // prohibit expansion inside the log title]
-            if (NOT_BROWSER) {
+            if (INSIDE_KARMA) {
+                return BoundPrefixConsoleLogWrap(log, '[' + namespace + '] ');
+            } else if (NOT_BROWSER) {
                 if (TRY_ANDROID) {
                     var colour = selectColor(namespace);
                     return BoundPrefixConsoleLogWrap(log, STYLE.color.ansi16m.hex(colour) + '[' + namespace + '] ' + STYLE.color.close);

@@ -1,8 +1,9 @@
 {
   "name": "bracketslogger",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "keywords": [
     "console",
+    "colour",
     "log",
     "map",
     "typescript"
