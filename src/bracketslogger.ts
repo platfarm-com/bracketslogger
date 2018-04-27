@@ -1,5 +1,7 @@
 import * as util from 'util';
 
+declare var window: any;
+
 function NOOP() {}
 
 // tslint:disable-next-line
@@ -7,6 +9,8 @@ let DISABLE_PREFIX = false;
 
 // tslint:disable-next-line
 let NOT_BROWSER = false; // FIXME - set depending on if this is a Android (or iOS?) or a browser, etc.
+
+let INSIDE_KARMA = false;
 
 // Note: only reliable way to detect when running in live reload develoment on android is check the UA
 // Because live reload is not serving from the device...
@@ -19,6 +23,9 @@ if ((document && document.URL && document.URL.startsWith('file')) || /wv/.test(w
   NOT_BROWSER = true;
   TRY_ANDROID = true; // Enable colour output in logcat
   STYLE = require('ansi-styles');
+}
+if ((typeof window.__karma__) !== 'undefined') {
+  INSIDE_KARMA = true;
 }
 
 // uncomment to test; TODO pull from build environment
@@ -180,9 +187,11 @@ const LEVELS = { 'TRACE': 0, 'DEBUG': 1, 'INFO': 2, 'WARN': 3, 'ERROR': 4, 'SILE
 
 let systemWideCurrentLevel = 1;
 
-console.log('[BracketsLogger Debug Logging]');
-console.log('[BracketsLogger Debug Logging] haveColour=' + haveColour); // use function to print out what the browser thinks it is
-console.log('[BracketsLogger Debug Logging] currentLevel=' + systemWideCurrentLevel); // use function to print out what the browser thinks it is
+if (!INSIDE_KARMA) {
+  console.log('[BracketsLogger Debug Logging]');
+  console.log('[BracketsLogger Debug Logging] haveColour=' + haveColour); // use function to print out what the browser thinks it is
+  console.log('[BracketsLogger Debug Logging] currentLevel=' + systemWideCurrentLevel); // use function to print out what the browser thinks it is
+}
 if (systemWideCurrentLevel > LEVELS.ERROR) {
   console.error('[BracketsLogger Debug Logging] WARNING - App Error Debugging is suppressed!');
 }
@@ -230,7 +239,9 @@ export class Logging implements ILogging {
   }
 
   constructor(namespace: string) {
-    console.log('[BracketsLogger] Enrol: ' + namespace);
+    if (!INSIDE_KARMA) {
+      console.log('[BracketsLogger] Enrol: ' + namespace);
+    }
     this.namespace_ = namespace;
     this['Trace'] = this.enrol('trace', namespace, 0);
     this['Debug'] = this.enrol('log', namespace, 1);
@@ -251,6 +262,7 @@ export class Logging implements ILogging {
   private enrol(log: string, namespace: string, level): Function {
     if (systemWideCurrentLevel > level) return SimpleBrowserNoop(log);
     if (!(console[log] !== undefined)) log = 'log';
+    if (INSIDE_KARMA && log === 'info') log = 'log'; // INFO not supported by karma reporter
     if (DISABLE_PREFIX) {
       if (NOT_BROWSER) {
         return BoundSimpleConsoleLogWrap(log);
@@ -259,7 +271,9 @@ export class Logging implements ILogging {
       }
     } else {
       namespace = namespace.replace(/%/g, '%%'); // prohibit expansion inside the log title]
-      if (NOT_BROWSER) {
+      if (INSIDE_KARMA) {
+        return BoundPrefixConsoleLogWrap(log, '[' + namespace + '] ');
+      } else if (NOT_BROWSER) {
         if (TRY_ANDROID) {
           const colour = selectColor(namespace);
           return BoundPrefixConsoleLogWrap(log, STYLE.color.ansi16m.hex(colour) + '[' + namespace + '] ' + STYLE.color.close);
