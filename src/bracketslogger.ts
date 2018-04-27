@@ -147,6 +147,10 @@ function BoundPrefixConsoleLogWrap(log, prefix): Function {
   }
 }
 
+function SimpleBrowserNoop(log): Function {
+  return function(...args): Function { return NOOP; }
+}
+
 function BoundSimpleBrowserLogWrap(log): Function {
   return function(...args): Function {
     return console[log].bind(console, ...BrowserReplacer(args[0], ...args));
@@ -187,13 +191,13 @@ const AllLoggers = {};
 
 // Affects entire app at present, and only for future constructions.
 // Therefore should be called from main.ts and somehow using a flag from the build environment.
-export function setLevel(level) {
+export function setLevel(level, quiet?) {
   if (typeof level === 'string' && LEVELS[level.toUpperCase()] !== undefined) {
     level = LEVELS[level.toUpperCase()];
   }
   if (typeof level === 'number' && level >= 0 && level <= LEVELS.SILENT) {
     if (systemWideCurrentLevel !== level) {
-      console.log('[BracketsLogger Debug Logging] change: currentLevel=' + systemWideCurrentLevel);
+      if (quiet !== true) console.log('[BracketsLogger Debug Logging] change: currentLevel=' + systemWideCurrentLevel + ' newLevel=' + level);
       systemWideCurrentLevel = level;
       Object.getOwnPropertyNames(AllLoggers).forEach(v => AllLoggers[v].refreshLevels());
     }
@@ -228,23 +232,24 @@ export class Logging implements ILogging {
   constructor(namespace: string) {
     console.log('[BracketsLogger] Enrol: ' + namespace);
     this.namespace_ = namespace;
-    this['Trace'] = this.enrol('trace', namespace);
-    this['Debug'] = this.enrol('log', namespace);
-    this['Info'] = this.enrol('info', namespace);
-    this['Warn'] = this.enrol('warn', namespace);
-    this['Error'] = this.enrol('error', namespace);
+    this['Trace'] = this.enrol('trace', namespace, 0);
+    this['Debug'] = this.enrol('log', namespace, 1);
+    this['Info'] = this.enrol('info', namespace, 2);
+    this['Warn'] = this.enrol('warn', namespace, 3);
+    this['Error'] = this.enrol('error', namespace, 4);
   }
 
   refreshLevels() {
-    this['Trace'] = this.enrol('trace', this.namespace_);
-    this['Debug'] = this.enrol('log', this.namespace_);
-    this['Info'] = this.enrol('info', this.namespace_);
-    this['Warn'] = this.enrol('warn', this.namespace_);
-    this['Error'] = this.enrol('error', this.namespace_);
+    // console.log('[BracketsLogger] refreshLevels: ' + this.namespace_);
+    this['Trace'] = this.enrol('trace', this.namespace_, 0);
+    this['Debug'] = this.enrol('log', this.namespace_, 1);
+    this['Info'] = this.enrol('info', this.namespace_, 2);
+    this['Warn'] = this.enrol('warn', this.namespace_, 3);
+    this['Error'] = this.enrol('error', this.namespace_, 4);
   }
 
-  private enrol(log: string, namespace?: string): Function {
-    if (systemWideCurrentLevel > LEVELS.DEBUG) return NOOP;
+  private enrol(log: string, namespace: string, level): Function {
+    if (systemWideCurrentLevel > level) return SimpleBrowserNoop(log);
     if (!(console[log] !== undefined)) log = 'log';
     if (DISABLE_PREFIX) {
       if (NOT_BROWSER) {
