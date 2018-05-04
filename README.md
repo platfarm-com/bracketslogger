@@ -19,7 +19,7 @@ There is also a very small performance hit because a new anonymous function is c
 
 *bracketslogger* comes with a tslint rule that will warn if the brackets are missing.
 This wont help if you are using it from pure javascript however.
-See http://github.com/pastcompute/bracketslogger-tslint-rule.git
+See http://github.com/platfarm-com/bracketslogger-tslint-rules.git
 
 This library is being used in a real (proprietary) Android app under development.
 
@@ -67,6 +67,13 @@ css to colour the results made it easy to pick various component logs out.
 - debug - https://www.npmjs.com/package/debug
 - log-level - https://github.com/pimterry/loglevel
 
-# Licensing
+# License
 
-I've set this to LGPL-2.1 for the moment, until I work out whats best.
+Bracketslogger is licensed under the MPL (see https://www.mozilla.org/en-US/MPL/2.0/FAQ/
+
+Briefly paraphrased, you can use Teuthis in a commercial setting, and the MPL does not have the "viral" component of the GPL. However _modifications_ to files _that are part of Teuthis_ that you wish to _redistribute_ (by using in a web page or hybrid mobile app) must be made available, and also cannot be re-licensed.
+
+The easiest way to make available is to submit a pull request :-)
+
+Please contact Platfarm (http://www.platfarm.com) to negotiate a commercial license if compliance with the MPL 2.0 license is does not fit your use case.
+
